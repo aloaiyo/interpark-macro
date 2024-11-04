@@ -6,14 +6,17 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 
 
 class App(threading.Thread):
     def __init__(self):
         super().__init__()
-        self.opt = webdriver.ChromeOptions()
+        self.opt = Options()
         self.opt.add_argument('window-size=800,600')
-        self.driver = webdriver.Chrome(executable_path="./chromedriver", options=self.opt)
+        service = Service(executable_path="./chromedriver")
+        self.driver = webdriver.Chrome(service=service, options=self.opt)
         self.wait = WebDriverWait(self.driver, 10)
         self.url = "https://ticket.interpark.com/Gate/TPLogin.asp"
         self.driver.get(self.url)
@@ -74,10 +77,10 @@ class App(threading.Thread):
     # 로그인 하기
     def login(self):
         def task():
-            self.driver.switch_to.frame(self.driver.find_element_by_tag_name('iframe'))
-            self.driver.find_element_by_name('userId').send_keys(self.id_entry.get())
-            self.driver.find_element_by_id('userPwd').send_keys(self.pw_entry.get())
-            self.driver.find_element_by_id('btn_login').click()
+            self.driver.switch_to.frame(self.driver.find_element(By.TAG_NAME, 'iframe'))
+            self.driver.find_element(By.NAME, 'userId').send_keys(self.id_entry.get())
+            self.driver.find_element(By.ID, 'userPwd').send_keys(self.pw_entry.get())
+            self.driver.find_element(By.ID, 'btn_login').click()
 
         newthread = threading.Thread(target=task)
         newthread.start()
@@ -85,7 +88,11 @@ class App(threading.Thread):
     # 직링 바로가기
     def link_go(self):
         def task():
-            self.driver.get('http://poticket.interpark.com/Book/BookSession.asp?GroupCode=' + self.showcode_entry.get())
+            # JavaScript를 사용하여 Referer 헤더를 설정하고 페이지를 로드
+            referer = "https://tickets.interpark.com/"  # 원하는 Referer URL로 변경
+            showcode_url = 'http://poticket.interpark.com/Book/BookSession.asp?GroupCode=' + self.showcode_entry.get()
+            script = f"window.location.href = '{showcode_url}';"
+            self.driver.execute_script(f"document.referrer = '{referer}'; {script}")
 
         newthread = threading.Thread(target=task)
         newthread.start()
